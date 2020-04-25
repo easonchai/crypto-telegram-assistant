@@ -293,8 +293,8 @@ def main():
             states={
                 CHOOSING: [MessageHandler(Filters.regex('Miner$'), get_miner_info),
                            MessageHandler(Filters.regex('Energi$'), get_energi_info),
-                           MessageHandler(Filters.regex('Settings$'), executor),
-                           MessageHandler(Filters.regex('Market Data$'), executor)],
+                           MessageHandler(Filters.regex('Settings$'), help),
+                           MessageHandler(Filters.regex('Market Data$'), help)],
             },
 
             fallbacks=[MessageHandler(Filters.regex('^Back|Cancel$'), back)]
@@ -309,7 +309,7 @@ def main():
         j = updater.job_queue
         hourly_update = j.run_repeating(background_process, interval=3600, first=0)
         r = updater.job_queue
-        reset_counter = r.run_daily(reset_earned, datetime.time(0,0), days=(0,1,2,3,4,5,6))
+        reset_counter = r.run_daily(reset_earned, datetime.time(0, 7), days=(0, 1, 2, 3, 4, 5, 6))
         # m = updater.job_queue
         # morning_routine = m.run_daily(morning_update, datetime.time(9,0), days=(0, 1, 2, 3, 4, 5, 6))
 
