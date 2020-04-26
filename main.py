@@ -405,7 +405,7 @@ def main():
         mn_status = int(file_data[1].split(":")[1])
         prev_balance = float(file_data[2].split(":")[1])
         earned = float(file_data[3].split(":")[1])
-        last_reward = file_data[4].split(":")[1]
+        last_reward = file_data[4].split(":",1)[1]
         reward_block = int(file_data[5].split(":")[1])
         stake_block = int(file_data[6].split(":")[1])
 
