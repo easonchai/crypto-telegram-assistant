@@ -436,7 +436,7 @@ def main():
                                  MessageHandler(Filters.regex('Market Data Watchlist$'), set_market_data),
                                  MessageHandler(Filters.regex('Morning Routine$'), set_morning_routine),
                                  MessageHandler(Filters.regex('Cancel$'), cancel)],
-                REPLY: [MessageHandler(Filters.text(), execute_change)]
+                REPLY: [MessageHandler(Filters.text, execute_change)]
             },
             fallbacks=[MessageHandler(Filters.regex('Cancel$'), cancel)]
         )
