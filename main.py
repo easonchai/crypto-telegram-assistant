@@ -526,8 +526,6 @@ def reset_earned(bot, update):
 
 def settings(bot, update):
     try:
-        chat_id = update.message.chat_id
-        bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
         button_list = ["\U000026CF Miner Address", "\U00002747 Energi Address", "\U0001F4CA Market Data Watchlist",
                        "\U0001F305 Morning Routine"]
         markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2, footer_buttons="Cancel"), one_time_keyboard=True)
