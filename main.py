@@ -39,7 +39,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 admin_id = [512004133]
 
-CHOOSING = range(1)
+CHOOSING, SETTING_CHOICE, REPLY = range(3)
 
 # Global Variables
 address = ""
@@ -51,10 +51,12 @@ reward_block = 0
 stake_block = 0
 cmc_id = []
 cmc_ticker = []
+file_to_edit = "ticker.txt"
+morning_routine_time = datetime.time(9, 30)
 
 
 # =========================== GET DATA ===========================
-def get_energi_info(bot, update):
+def get_energi_info(bot, update, routine=False):
     try:
         global address, mn_status, prev_balance, earned, last_reward
 
@@ -73,13 +75,14 @@ def get_energi_info(bot, update):
 
         chat_id = update.message.chat_id
 
-        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
-                       "\U00002753 Help"]
-        bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
-        markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
-        update.message.reply_text('_What else can I do for you?_', reply_markup=markup,
-                                  parse_mode="markdown")
-        return CHOOSING
+        if not routine:
+            button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
+                           "\U00002753 Help"]
+            bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+            markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
+            update.message.reply_text('_What else can I do for you?_', reply_markup=markup,
+                                      parse_mode="markdown")
+            return CHOOSING
     except Exception as e:
         error_handler(bot, update, e)
 
@@ -196,7 +199,7 @@ def background_process(bot, update):
         error_handler(bot, update, e)
 
 
-def get_miner_info(bot, update):
+def get_miner_info(bot, update, routine=False):
     try:
         chat_id = update.message.chat_id
         message = "_Obtaining info..._"
@@ -243,12 +246,13 @@ def get_miner_info(bot, update):
             message = "_Error connecting to server!_"
         bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
 
-        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
-                       "\U00002753 Help"]
-        markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
-        update.message.reply_text('_Anything else?_', reply_markup=markup,
-                                  parse_mode="markdown")
-        return CHOOSING
+        if not routine:
+            button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
+                           "\U00002753 Help"]
+            markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
+            update.message.reply_text('_Anything else?_', reply_markup=markup,
+                                      parse_mode="markdown")
+            return CHOOSING
     except Exception as e:
         error_handler(bot, update, e)
 
@@ -272,9 +276,9 @@ def miner_background(bot, update):
             reported = current_stats['reportedHashrate'] / 10 ** 6  # Convert H to MH
             average = current_stats['averageHashrate'] / 10 ** 6  # Convert H to MH
             if latest_status == 1:
-                if reported < 0.8*21.2:
+                if reported < 0.8 * 21.2:
                     message = "\U000026A0 _Reported hashrate has dipped below threshold!\U000026A0\nReported Hashrate: %f_" % reported
-                if average < 0.8*21.2:
+                if average < 0.8 * 21.2:
                     message = "\U000026A0 _Average hashrate has dipped below threshold!\U000026A0\nAverage Hashrate: %f_" % average
             else:
                 message = "\U000026A0 _Miner has shut down!\U000026A0_"
@@ -304,6 +308,7 @@ def get_cmc_id(bot, update):
         response = session.get(url, params=parameters)
         data = json.loads(response.text)
         dataset = data['data']
+        cmc_id = []
         for x in dataset:
             cmc_id.append(x['id'])
     except (ConnectionError, Timeout, TooManyRedirects) as e:
@@ -311,7 +316,7 @@ def get_cmc_id(bot, update):
         error_handler(bot, update, e)
 
 
-def market_data(bot, update):
+def market_data(bot, update, routine=False):
     global cmc_id
     get_cmc_id(bot, update)
     try:
@@ -341,24 +346,70 @@ def market_data(bot, update):
             price = dataset['quote']['USD']['price']
             change = dataset['quote']['USD']['percent_change_24h']
 
-            message += "%s [%s]\nRank: %d\nPrice: %.2f\nPercent Change (24 Hrs): %.2f%%\n" % (name, ticker, rank, price, change)
+            message += "%s (%s)\nRank: %d\nPrice: %.2f\nPercent Change (24 Hrs): %.2f%%\n\n" % (
+                name, ticker, rank, price, change)
         bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode='Markdown')
 
-        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
-                       "\U00002753 Help"]
-        markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
-        update.message.reply_text('_Is there anything else?_', reply_markup=markup,
-                                  parse_mode="markdown")
-        return CHOOSING
+        if not routine:
+            button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
+                           "\U00002753 Help"]
+            markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
+            update.message.reply_text('_Is there anything else?_', reply_markup=markup,
+                                      parse_mode="markdown")
+            return CHOOSING
     except Exception as e:
         error_handler(bot, update, e)
 
 
-# =========================== END OF GET DATA ===========================
+def morning_update(bot, update):
+    bot.send_message(chat_id=512004133, text="_Good Morning!\nHere's your daily update!_", parse_mode='Markdown')
+    get_miner_info(bot, update, routine=True)
+    get_energi_info(bot, update, routine=True)
+    market_data(bot, update, routine=True)
 
+
+# =========================== END OF GET DATA ===========================
+# =========================== SETTINGS SECTION ===========================
+def set_miner_address(bot, update):
+    global file_to_edit
+    file_to_edit = "miner.txt"
+    bot.send_message(chat_id=update.message.chat_id,
+                     text="_Please enter the new address as shown below:_\n`{Name} - {Address}`",
+                     parse_mode='Markdown')
+    return REPLY
+
+
+def set_energi_address(bot, update):
+    global file_to_edit
+    file_to_edit = "energi.txt"
+    bot.send_message(chat_id=update.message.chat_id,
+                     text="_Please enter the new address:_",
+                     parse_mode='Markdown')
+    return REPLY
+
+
+def set_market_data(bot, update):
+    global file_to_edit
+    file_to_edit = "cmc.txt"
+    bot.send_message(chat_id=update.message.chat_id,
+                     text="_Please enter the new watchlist as shown below:_\n`BTC,ETH,XRP`",
+                     parse_mode='Markdown')
+    return REPLY
+
+
+def set_morning_routine(bot, update):
+    global file_to_edit
+    file_to_edit = "routine"
+    bot.send_message(chat_id=update.message.chat_id,
+                     text="_What time would you like me to notify you?_",
+                     parse_mode='Markdown')
+    return REPLY
+
+
+# =========================== END OF SETTINGS ===========================
 def main():
     try:
-        global address, mn_status, prev_balance, earned, last_reward, reward_block, stake_block, cmc_ticker, cmc_id
+        global address, mn_status, prev_balance, earned, last_reward, reward_block, stake_block, cmc_ticker, cmc_id, morning_routine_time
         updater = Updater(open("./data/api_keys/telegram.txt", "r").read())
         dp = updater.dispatcher
         # dp.add_handler(CommandHandler('start', start))
@@ -376,11 +427,18 @@ def main():
             states={
                 CHOOSING: [MessageHandler(Filters.regex('Miner$'), get_miner_info),
                            MessageHandler(Filters.regex('Energi$'), get_energi_info),
-                           MessageHandler(Filters.regex('Settings$'), help),
+                           MessageHandler(Filters.regex('Settings$'), settings),
                            MessageHandler(Filters.regex('Market Data$'), market_data),
                            MessageHandler(Filters.regex('Help$'), help)],
+
+                SETTING_CHOICE: [MessageHandler(Filters.regex('Miner Address$'), set_miner_address),
+                                 MessageHandler(Filters.regex('Energi Address$'), set_energi_address),
+                                 MessageHandler(Filters.regex('Market Data Watchlist$'), set_market_data),
+                                 MessageHandler(Filters.regex('Morning Routine$'), set_morning_routine),
+                                 MessageHandler(Filters.regex('Cancel$'), cancel)],
+                REPLY: [MessageHandler(Filters.text(), execute_change)]
             },
-            fallbacks = [MessageHandler(Filters.regex('Help$'), help)]
+            fallbacks=[MessageHandler(Filters.regex('Cancel$'), cancel)]
         )
         dp.add_handler(start_handler)
 
@@ -392,10 +450,9 @@ def main():
         j = updater.job_queue
         hourly_update = j.run_repeating(background_process, interval=3600, first=0)
         r = updater.job_queue
-        reset_counter = r.run_daily(reset_earned, datetime.time(23, 43), days=(0, 1, 2, 3, 4, 5, 6))
-
-        # m = updater.job_queue
-        # morning_routine = m.run_daily(morning_update, datetime.time(9,0), days=(0, 1, 2, 3, 4, 5, 6))
+        reset_counter = r.run_daily(reset_earned, datetime.time(00, 00), days=(0, 1, 2, 3, 4, 5, 6))
+        m = updater.job_queue
+        morning_routine = m.run_daily(morning_update, morning_routine_time, days=(0, 1, 2, 3, 4, 5, 6))
 
         # Preliminary Load
         file_data = retrieve("./data/", "energi.txt", True)
@@ -403,7 +460,8 @@ def main():
         mn_status = int(file_data[1].split(":")[1])
         prev_balance = float(file_data[2].split(":")[1])
         earned = float(file_data[3].split(":")[1])
-        last_reward = file_data[4].split(":",1)[1].strip('\n') if file_data[4].split(":",1)[1].endswith('\n') else file_data[4].split(":",1)[1]
+        last_reward = file_data[4].split(":", 1)[1].strip('\n') if file_data[4].split(":", 1)[1].endswith('\n') else \
+            file_data[4].split(":", 1)[1]
         reward_block = int(file_data[5].split(":")[1])
         stake_block = int(file_data[6].split(":")[1])
         print("last reward in main" + last_reward)
@@ -423,7 +481,8 @@ def start(bot, update):
         text = "_Hello, {user}!_".format(user=update.message.from_user.first_name)
         bot.send_message(chat_id=update.message.chat_id, text=text, parse_mode='Markdown')
 
-        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data", "\U00002753 Help"]
+        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
+                       "\U00002753 Help"]
         markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
         update.message.reply_text('_What would you like to do today?_', reply_markup=markup,
                                   parse_mode="markdown")
@@ -460,9 +519,60 @@ def reset_earned(bot, update):
     try:
         print("RESET")
         global earned
-        earned = 0;
+        earned = 0
     except Exception as e:
         error_handler(bot, update, e)
+
+
+def settings(bot, update):
+    try:
+        chat_id = update.message.chat_id
+        bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        button_list = ["\U000026CF Miner Address", "\U00002747 Energi Address", "\U0001F4CA Market Data Watchlist",
+                       "\U0001F305 Morning Routine"]
+        markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2, footer_buttons="Cancel"), one_time_keyboard=True)
+        update.message.reply_text('_What would you like to change?_', reply_markup=markup,
+                                  parse_mode="markdown")
+        return SETTING_CHOICE
+    except Exception as e:
+        error_handler(bot, update, e)
+
+
+def cancel(bot, update):
+    button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
+                   "\U00002753 Help"]
+    markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
+    update.message.reply_text('_Got it. What else can I help you with?_', reply_markup=markup,
+                              parse_mode="markdown")
+
+
+def execute_change(bot, update):
+    global file_to_edit, morning_routine_time
+    data = update.message.text
+    if file_to_edit == "energi.txt":
+        f = open("./data/" + file_to_edit, "r")
+        old_data = f.readlines()
+        f.close()
+        old_data[0] = "Address:%s\n" % data
+
+        # open to write
+        f = open("./data/" + file_to_edit, "w")
+        f.writelines(data)
+        f.close()
+    elif file_to_edit == "routine":
+        hour = data.split(':')[0]
+        minute = data.split(':')[1]
+        morning_routine_time = datetime.time(hour, minute)
+    else:
+        f = open("./data/" + file_to_edit, "w")
+        f.write(data)
+        f.close()
+
+    button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
+                   "\U00002753 Help"]
+    markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
+    update.message.reply_text('_All done!_', reply_markup=markup,
+                              parse_mode="markdown")
 
 
 # =================== HELPERS ==================== #
