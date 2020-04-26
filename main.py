@@ -73,6 +73,9 @@ def get_energi_info(bot, update):
 
         chat_id = update.message.chat_id
         bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
+        update.message.reply_text('_What else can I do for you?_', reply_markup=markup,
+                                  parse_mode="markdown")
         return CHOOSING
     except Exception as e:
         error_handler(bot, update, e)
@@ -235,6 +238,9 @@ def get_miner_info(bot, update):
         else:
             message = "_Error connecting to server!_"
         bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
+        update.message.reply_text('_Anything else?_', reply_markup=markup,
+                                  parse_mode="markdown")
         return CHOOSING
     except Exception as e:
         error_handler(bot, update, e)
@@ -332,8 +338,14 @@ def market_data(bot, update):
                        f'Rank: {rank}' \
                        f'Price: {price}' \
                        f'% Change (24 Hrs): {change}\n'
-            bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
-            return CHOOSING
+        bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+
+        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
+                       "\U00002753 Help"]
+        markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
+        update.message.reply_text('_Is there anything else?_', reply_markup=markup,
+                                  parse_mode="markdown")
+        return CHOOSING
     except Exception as e:
         error_handler(bot, update, e)
 
@@ -361,10 +373,10 @@ def main():
                 CHOOSING: [MessageHandler(Filters.regex('Miner$'), get_miner_info),
                            MessageHandler(Filters.regex('Energi$'), get_energi_info),
                            MessageHandler(Filters.regex('Settings$'), help),
-                           MessageHandler(Filters.regex('Market Data$'), help),
+                           MessageHandler(Filters.regex('Market Data$'), market_data),
                            MessageHandler(Filters.regex('Help$'), help)],
             },
-            fallbacks = [MessageHandler(Filters.regex('Market Data$'), help)]
+            fallbacks = [MessageHandler(Filters.regex('Help$'), help)]
         )
         dp.add_handler(start_handler)
 
@@ -376,7 +388,7 @@ def main():
         j = updater.job_queue
         hourly_update = j.run_repeating(background_process, interval=3600, first=0)
         r = updater.job_queue
-        reset_counter = r.run_daily(reset_earned, datetime.time(23, 00), days=(0, 1, 2, 3, 4, 5, 6))
+        reset_counter = r.run_daily(reset_earned, datetime.time(23, 43), days=(0, 1, 2, 3, 4, 5, 6))
 
         # m = updater.job_queue
         # morning_routine = m.run_daily(morning_update, datetime.time(9,0), days=(0, 1, 2, 3, 4, 5, 6))
@@ -421,6 +433,11 @@ def help(bot, update):
         chat_id = update.message.chat_id
         message = retrieve("./data/", "help.txt")
         bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
+                       "\U00002753 Help"]
+        markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
+        update.message.reply_text('_What else can I help you with?_', reply_markup=markup,
+                                  parse_mode="markdown")
         return CHOOSING
     except Exception as e:
         error_handler(bot, update, e)
