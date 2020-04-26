@@ -572,6 +572,7 @@ def execute_change(bot, update):
     markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
     update.message.reply_text('_All done!_', reply_markup=markup,
                               parse_mode="markdown")
+    return CHOOSING
 
 
 # =================== HELPERS ==================== #
