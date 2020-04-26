@@ -303,11 +303,9 @@ def get_cmc_id(bot, update):
     try:
         response = session.get(url, params=parameters)
         data = json.loads(response.text)
-        print(data)
         dataset = data['data']
         for x in dataset:
             cmc_id.append(x['id'])
-        print(cmc_id)
     except (ConnectionError, Timeout, TooManyRedirects) as e:
         print(e)
         error_handler(bot, update, e)
@@ -321,10 +319,10 @@ def market_data(bot, update):
         url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
         parameters = {}
         headers = {}
-        message = "*=== \U0001F4CA Market Data ===*"
-        for x in cmc_id:
+        message = "*=== \U0001F4CA Market Data ===*\n"
+        for x in range(len(cmc_id)):
             parameters = {
-                'id': x,
+                'id': cmc_id[x],
             }
             headers = {
                 'Accepts': 'application/json',
@@ -335,17 +333,15 @@ def market_data(bot, update):
             session.headers.update(headers)
             response = session.get(url, params=parameters)
             data = json.loads(response.text)
-            dataset = data['data']
+            current_id = str(cmc_id[x])
+            dataset = data['data'][current_id]
             name = dataset['name']
             ticker = dataset['symbol']
             rank = dataset['cmc_rank']
             price = dataset['quote']['USD']['price']
             change = dataset['quote']['USD']['percent_change_24h']
 
-            message += f'{name} [{ticker}]' \
-                       f'Rank: {rank}' \
-                       f'Price: {price}' \
-                       f'% Change (24 Hrs): {change}\n'
+            message += "%s [%s]\nRank: %d\nPrice: %.2f\nPercent Change (24 Hrs): %.2f%%\n" % (name, ticker, rank, price, change)
         bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode='Markdown')
 
         button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
