@@ -335,7 +335,7 @@ def market_data(bot, update):
             session.headers.update(headers)
             response = session.get(url, params=parameters)
             data = json.loads(response.text)
-            dataset = data['data'][0]
+            dataset = data['data']
             name = dataset['name']
             ticker = dataset['symbol']
             rank = dataset['cmc_rank']
@@ -393,10 +393,10 @@ def main():
         dp.add_handler(unknown_handler)
 
         # Threaded process
-        #j = updater.job_queue
-        #hourly_update = j.run_repeating(background_process, interval=3600, first=0)
-        #r = updater.job_queue
-        #reset_counter = r.run_daily(reset_earned, datetime.time(23, 43), days=(0, 1, 2, 3, 4, 5, 6))
+        j = updater.job_queue
+        hourly_update = j.run_repeating(background_process, interval=3600, first=0)
+        r = updater.job_queue
+        reset_counter = r.run_daily(reset_earned, datetime.time(23, 43), days=(0, 1, 2, 3, 4, 5, 6))
 
         # m = updater.job_queue
         # morning_routine = m.run_daily(morning_update, datetime.time(9,0), days=(0, 1, 2, 3, 4, 5, 6))
@@ -407,7 +407,7 @@ def main():
         mn_status = int(file_data[1].split(":")[1])
         prev_balance = float(file_data[2].split(":")[1])
         earned = float(file_data[3].split(":")[1])
-        last_reward = file_data[4].split(":",1)[1]
+        last_reward = file_data[4].split(":",1)[1].strip('\n') if file_data[4].split(":",1)[1].endswith('\n') else file_data[4].split(":",1)[1]
         reward_block = int(file_data[5].split(":")[1])
         stake_block = int(file_data[6].split(":")[1])
         print("last reward in main" + last_reward)
