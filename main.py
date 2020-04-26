@@ -320,6 +320,9 @@ def market_data(bot, update, routine=False):
     global cmc_id
     get_cmc_id(bot, update)
     try:
+        chat_id = update.message.chat_id
+        message = "_Grabbing data..._"
+        bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
         cmc_api_key = retrieve("./data/api_keys/", "cmc.txt")
         url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
         parameters = {}
@@ -390,7 +393,7 @@ def set_energi_address(bot, update):
 
 def set_market_data(bot, update):
     global file_to_edit
-    file_to_edit = "cmc.txt"
+    file_to_edit = "ticker.txt"
     bot.send_message(chat_id=update.message.chat_id,
                      text="_Please enter the new watchlist as shown below:_\n`BTC,ETH,XRP`",
                      parse_mode='Markdown')
@@ -398,10 +401,13 @@ def set_market_data(bot, update):
 
 
 def set_morning_routine(bot, update):
-    global file_to_edit
+    global file_to_edit, morning_routine_time
     file_to_edit = "routine"
     bot.send_message(chat_id=update.message.chat_id,
-                     text="_What time would you like me to notify you?_",
+                     text="_I will notify you at %s everyday_" % morning_routine_time,
+                     parse_mode='Markdown')
+    bot.send_message(chat_id=update.message.chat_id,
+                     text="_What time would you like to change it to?_",
                      parse_mode='Markdown')
     return REPLY
 
