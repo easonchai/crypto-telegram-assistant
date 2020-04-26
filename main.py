@@ -49,6 +49,8 @@ earned = 0
 last_reward = ""
 reward_block = 0
 stake_block = 0
+cmc_id = []
+cmc_ticker = []
 
 
 # =========================== GET DATA ===========================
@@ -71,7 +73,7 @@ def get_energi_info(bot, update):
 
         chat_id = update.message.chat_id
         bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
-
+        return CHOOSING
     except Exception as e:
         error_handler(bot, update, e)
 
@@ -182,7 +184,7 @@ def background_process(bot, update):
         f.close()
 
         miner_background(bot, update)
-
+        print("Background process complete")
     except Exception as e:
         error_handler(bot, update, e)
 
@@ -192,7 +194,7 @@ def get_miner_info(bot, update):
         chat_id = update.message.chat_id
         message = "_Obtaining info..._"
         bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
-        data = retrieve(bot, update, "./data/", "miner.txt").split(" - ")
+        data = retrieve("./data/", "miner.txt").split(" - ")
         address = data[1]
         name = data[0].upper()
 
@@ -233,6 +235,7 @@ def get_miner_info(bot, update):
         else:
             message = "_Error connecting to server!_"
         bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        return CHOOSING
     except Exception as e:
         error_handler(bot, update, e)
 
@@ -240,8 +243,7 @@ def get_miner_info(bot, update):
 def miner_background(bot, update):
     try:
         message = ""
-        bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
-        data = retrieve(bot, update, "./data/", "miner.txt").split(" - ")
+        data = retrieve("./data/", "miner.txt").split(" - ")
         address = data[1]
 
         url = "https://api.ethermine.org/miner/%s/currentStats" % address
@@ -270,12 +272,77 @@ def miner_background(bot, update):
         error_handler(bot, update, e)
 
 
-# =========================== END OF GET DATA ===========================
+def get_cmc_id(bot, update):
+    global cmc_ticker, cmc_id
+    url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/map'
+    parameters = {
+        'symbol': cmc_ticker
+    }
+    headers = {
+        'Accepts': 'application/json',
+        'X-CMC_PRO_API_KEY': 'b54bcf4d-1bca-4e8e-9a24-22ff2c3d462c',
+    }
 
+    session = Session()
+    session.headers.update(headers)
+
+    try:
+        response = session.get(url, params=parameters)
+        data = json.loads(response.text)
+        dataset = data['data']
+        for x in dataset:
+            cmc_id.push(x['id'])
+        print(cmc_id)
+        # print(data)
+    except (ConnectionError, Timeout, TooManyRedirects) as e:
+        print(e)
+        error_handler(bot, update, e)
+
+
+def market_data(bot, update):
+    global cmc_id
+    get_cmc_id(bot, update)
+    try:
+        cmc_api_key = retrieve("./data/api_keys/", "cmc.txt");
+        url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
+        parameters = {}
+        headers = {}
+        message = "*=== \U0001F4CA Market Data ===*"
+        for x in cmc_id:
+            parameters = {
+                'id': x,
+            }
+            headers = {
+                'Accepts': 'application/json',
+                'X-CMC_PRO_API_KEY': cmc_api_key,
+            }
+
+            session = Session()
+            session.headers.update(headers)
+            response = session.get(url, params=parameters)
+            data = json.loads(response.text)
+            dataset = data['data'][0]
+            name = dataset['name']
+            ticker = dataset['symbol']
+            rank = dataset['cmc_rank']
+            price = dataset['quote']['USD']['price']
+            change = dataset['quote']['USD']['percent_change_24h']
+
+            message += f'{name} [{ticker}]' \
+                       f'Rank: {rank}' \
+                       f'Price: {price}' \
+                       f'% Change (24 Hrs): {change}\n'
+            bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+            return CHOOSING
+    except Exception as e:
+        error_handler(bot, update, e)
+
+
+# =========================== END OF GET DATA ===========================
 
 def main():
     try:
-        global address, mn_status, prev_balance, earned, last_reward, reward_block, stake_block
+        global address, mn_status, prev_balance, earned, last_reward, reward_block, stake_block, cmc_ticker, cmc_id
         updater = Updater(open("./data/api_keys/telegram.txt", "r").read())
         dp = updater.dispatcher
         # dp.add_handler(CommandHandler('start', start))
@@ -294,8 +361,10 @@ def main():
                 CHOOSING: [MessageHandler(Filters.regex('Miner$'), get_miner_info),
                            MessageHandler(Filters.regex('Energi$'), get_energi_info),
                            MessageHandler(Filters.regex('Settings$'), help),
-                           MessageHandler(Filters.regex('Market Data$'), help)],
+                           MessageHandler(Filters.regex('Market Data$'), help),
+                           MessageHandler(Filters.regex('Help$'), help)],
             },
+            fallbacks = [MessageHandler(Filters.regex('Market Data$'), help)]
         )
         dp.add_handler(start_handler)
 
@@ -307,7 +376,8 @@ def main():
         j = updater.job_queue
         hourly_update = j.run_repeating(background_process, interval=3600, first=0)
         r = updater.job_queue
-        reset_counter = r.run_daily(reset_earned, datetime.time(0, 15), days=(0, 1, 2, 3, 4, 5, 6))
+        reset_counter = r.run_daily(reset_earned, datetime.time(23, 00), days=(0, 1, 2, 3, 4, 5, 6))
+
         # m = updater.job_queue
         # morning_routine = m.run_daily(morning_update, datetime.time(9,0), days=(0, 1, 2, 3, 4, 5, 6))
 
@@ -320,6 +390,8 @@ def main():
         last_reward = file_data[4].split(":")[1]
         reward_block = int(file_data[5].split(":")[1])
         stake_block = int(file_data[6].split(":")[1])
+
+        cmc_ticker = retrieve("./data/", "ticker.txt")
 
         print("\n+===============================================+")
         print("|========== Telegram Bot is now LIVE! ==========|")
@@ -335,7 +407,7 @@ def start(bot, update):
         text = "_Hello, {user}!_".format(user=update.message.from_user.first_name)
         bot.send_message(chat_id=update.message.chat_id, text=text, parse_mode='Markdown')
 
-        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data"]
+        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data", "\U00002753 Help"]
         markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
         update.message.reply_text('_What would you like to do today?_', reply_markup=markup,
                                   parse_mode="markdown")
@@ -349,6 +421,7 @@ def help(bot, update):
         chat_id = update.message.chat_id
         message = retrieve("./data/", "help.txt")
         bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        return CHOOSING
     except Exception as e:
         error_handler(bot, update, e)
 
@@ -364,6 +437,7 @@ def unknown(bot, update):
 
 def reset_earned(bot, update):
     try:
+        print("RESET")
         global earned
         earned = 0;
     except Exception as e:
