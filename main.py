@@ -556,7 +556,7 @@ def execute_change(bot, update):
 
         # open to write
         f = open("./data/" + file_to_edit, "w")
-        f.writelines(data)
+        f.writelines(old_data)
         f.close()
     elif file_to_edit == "routine":
         hour = data.split(':')[0]
