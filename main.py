@@ -72,6 +72,9 @@ def get_energi_info(bot, update):
         message += ("[Block Explorer](https://explorer.energi.network/address/%s/transactions)" % address)
 
         chat_id = update.message.chat_id
+
+        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
+                       "\U00002753 Help"]
         bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
         markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
         update.message.reply_text('_What else can I do for you?_', reply_markup=markup,
@@ -238,6 +241,9 @@ def get_miner_info(bot, update):
         else:
             message = "_Error connecting to server!_"
         bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+
+        button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
+                       "\U00002753 Help"]
         markup = ReplyKeyboardMarkup(build_menu(button_list, n_cols=2), one_time_keyboard=True)
         update.message.reply_text('_Anything else?_', reply_markup=markup,
                                   parse_mode="markdown")
@@ -295,11 +301,11 @@ def get_cmc_id(bot, update):
     try:
         response = session.get(url, params=parameters)
         data = json.loads(response.text)
+        print(data)
         dataset = data['data']
         for x in dataset:
             cmc_id.push(x['id'])
         print(cmc_id)
-        # print(data)
     except (ConnectionError, Timeout, TooManyRedirects) as e:
         print(e)
         error_handler(bot, update, e)
