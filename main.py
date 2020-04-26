@@ -111,6 +111,7 @@ def get_mn_reward(bot, update):
                 reward_block = int(x['blockNumber'])
                 epoch = float(x['timeStamp'])
                 last_reward = time.strftime('%d-%m-%Y %H:%M:%S', time.localtime(epoch))
+                print("last reward in mn reward" + last_reward)
                 # Update data
             nrg_earned = float(int(x['value']) / 10 ** 18)
 
@@ -145,7 +146,7 @@ def get_stake_reward(bot, update):
                 stake_block = int(x['blockNumber'])
                 if stake_block > reward_block:
                     last_reward = x['timeStamp']
-
+                    print("last reward in stake reward" + last_reward)
             message = ("\U0001F4E5 *New Block Mined!* \U0001F4B5\n"
                        "\U000026A1 > Processed Stake Reward of Amount *2.28* NRG.\n")
             earned += 2.28
@@ -188,7 +189,7 @@ def background_process(bot, update):
                "Stake Block:%d" % (address, mn_status, prev_balance, earned, last_reward, reward_block, stake_block)
         f.write(data)
         f.close()
-
+        print("last reward in bg process" + last_reward)
         miner_background(bot, update)
         print("Background process complete")
     except Exception as e:
@@ -286,13 +287,14 @@ def miner_background(bot, update):
 
 def get_cmc_id(bot, update):
     global cmc_ticker, cmc_id
+    cmc_api_key = retrieve("./data/api_keys/", "cmc.txt")
     url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/map'
     parameters = {
         'symbol': cmc_ticker
     }
     headers = {
         'Accepts': 'application/json',
-        'X-CMC_PRO_API_KEY': 'b54bcf4d-1bca-4e8e-9a24-22ff2c3d462c',
+        'X-CMC_PRO_API_KEY': cmc_api_key,
     }
 
     session = Session()
@@ -304,7 +306,7 @@ def get_cmc_id(bot, update):
         print(data)
         dataset = data['data']
         for x in dataset:
-            cmc_id.push(x['id'])
+            cmc_id.append(x['id'])
         print(cmc_id)
     except (ConnectionError, Timeout, TooManyRedirects) as e:
         print(e)
@@ -316,7 +318,6 @@ def market_data(bot, update):
     get_cmc_id(bot, update)
     try:
         cmc_api_key = retrieve("./data/api_keys/", "cmc.txt")
-        print(cmc_api_key)
         url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
         parameters = {}
         headers = {}
@@ -409,7 +410,7 @@ def main():
         last_reward = file_data[4].split(":",1)[1]
         reward_block = int(file_data[5].split(":")[1])
         stake_block = int(file_data[6].split(":")[1])
-
+        print("last reward in main" + last_reward)
         cmc_ticker = retrieve("./data/", "ticker.txt")
 
         print("\n+===============================================+")
