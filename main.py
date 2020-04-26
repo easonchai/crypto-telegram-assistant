@@ -315,7 +315,8 @@ def market_data(bot, update):
     global cmc_id
     get_cmc_id(bot, update)
     try:
-        cmc_api_key = retrieve("./data/api_keys/", "cmc.txt");
+        cmc_api_key = retrieve("./data/api_keys/", "cmc.txt")
+        print(cmc_api_key)
         url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
         parameters = {}
         headers = {}
@@ -344,7 +345,7 @@ def market_data(bot, update):
                        f'Rank: {rank}' \
                        f'Price: {price}' \
                        f'% Change (24 Hrs): {change}\n'
-        bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
+        bot.send_message(chat_id=update.message.chat_id, text=message, parse_mode='Markdown')
 
         button_list = ["\U000026CF Miner", "\U00002747 Energi", "\U00002699 Settings", "\U0001F4CA Market Data",
                        "\U00002753 Help"]
@@ -391,10 +392,10 @@ def main():
         dp.add_handler(unknown_handler)
 
         # Threaded process
-        j = updater.job_queue
-        hourly_update = j.run_repeating(background_process, interval=3600, first=0)
-        r = updater.job_queue
-        reset_counter = r.run_daily(reset_earned, datetime.time(23, 43), days=(0, 1, 2, 3, 4, 5, 6))
+        #j = updater.job_queue
+        #hourly_update = j.run_repeating(background_process, interval=3600, first=0)
+        #r = updater.job_queue
+        #reset_counter = r.run_daily(reset_earned, datetime.time(23, 43), days=(0, 1, 2, 3, 4, 5, 6))
 
         # m = updater.job_queue
         # morning_routine = m.run_daily(morning_update, datetime.time(9,0), days=(0, 1, 2, 3, 4, 5, 6))
