@@ -52,7 +52,7 @@ stake_block = 0
 cmc_id = []
 cmc_ticker = []
 file_to_edit = "ticker.txt"
-morning_routine_time = datetime.time(9, 30)
+morning_routine_time = datetime.time(12, 45)
 
 
 # =========================== GET DATA ===========================
@@ -291,6 +291,7 @@ def miner_background(bot, update):
 
 def get_cmc_id(bot, update):
     global cmc_ticker, cmc_id
+    cmc_ticker = retrieve("./data/", "ticker.txt")
     cmc_api_key = retrieve("./data/api_keys/", "cmc.txt")
     url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/map'
     parameters = {
@@ -311,6 +312,7 @@ def get_cmc_id(bot, update):
         cmc_id = []
         for x in dataset:
             cmc_id.append(x['id'])
+        cmc_id.sort()
     except (ConnectionError, Timeout, TooManyRedirects) as e:
         print(e)
         error_handler(bot, update, e)
@@ -402,7 +404,7 @@ def set_market_data(bot, update):
 
 def set_morning_routine(bot, update):
     global file_to_edit, morning_routine_time
-    file_to_edit = "routine"
+    file_to_edit = "routine.txt"
     bot.send_message(chat_id=update.message.chat_id,
                      text="_I will notify you at %s everyday_" % morning_routine_time,
                      parse_mode='Markdown')
@@ -458,7 +460,7 @@ def main():
         r = updater.job_queue
         reset_counter = r.run_daily(reset_earned, datetime.time(00, 00), days=(0, 1, 2, 3, 4, 5, 6))
         m = updater.job_queue
-        morning_routine = m.run_daily(morning_update, morning_routine_time, days=(0, 1, 2, 3, 4, 5, 6))
+        morning_routine = r.run_daily(morning_update, morning_routine_time, days=(0, 1, 2, 3, 4, 5, 6))
 
         # Preliminary Load
         file_data = retrieve("./data/", "energi.txt", True)
@@ -470,8 +472,6 @@ def main():
             file_data[4].split(":", 1)[1]
         reward_block = int(file_data[5].split(":")[1])
         stake_block = int(file_data[6].split(":")[1])
-        print("last reward in main" + last_reward)
-        cmc_ticker = retrieve("./data/", "ticker.txt")
 
         print("\n+===============================================+")
         print("|========== Telegram Bot is now LIVE! ==========|")
@@ -564,11 +564,9 @@ def execute_change(bot, update):
         f = open("./data/" + file_to_edit, "w")
         f.writelines(old_data)
         f.close()
-    elif file_to_edit == "routine":
+    elif file_to_edit == "routine.txt":
         hour = int(data.split(':')[0])
-        print(hour)
         minute = int(data.split(':')[1])
-        print(minute)
         morning_routine_time = datetime.time(hour, minute)
     else:
         f = open("./data/" + file_to_edit, "w")
